@@ -6,24 +6,39 @@ Inspired by [I wasted 68 minutes a day re-explaining my code, then I built auto-
 
 ## What it does
 
-Indexes every `~/.claude/projects/*/*.jsonl` (Claude Code's per-session transcript files) into a SQLite cache with FTS5 full-text search, then exposes a `auto-memory` CLI to query it. The bundled SKILL teaches Claude Code to invoke the CLI automatically when it needs prior context — so you stop re-explaining what you were working on.
+Indexes every `~/.claude/projects/*/*.jsonl` (Claude Code's per-session transcript files) into a SQLite cache with FTS5 full-text search, then exposes an `auto-memory.py` CLI to query it.
 
-**Read-only.** Never writes to the source jsonl files. The index lives in `~/.claude/auto-memory/index.db`.
+The bundled `SKILL.md` is wired so Claude Code invokes the CLI at the start of every conversation (and again whenever you reference prior work) — so you stop re-explaining what you were working on.
 
-**Stdlib only.** Single Python file, no dependencies.
+- **Read-only.** Never writes to the source jsonl files. The index lives in `~/.claude/auto-memory/index.db`.
+- **Stdlib only.** Single Python file, no dependencies.
+- **WAL-safe.** Designed to run concurrently with live Claude Code processes.
+
+## How it gets invoked
+
+The skill's `description` field uses the strongest session-start triggering language Claude Code accepts ("Use when starting ANY conversation... BEFORE composing your first response"). In practice this means Claude reads the skill at the top of every conversation in a project that has prior history and runs the Tier 1 commands before replying.
+
+This is reliable but not deterministic — Claude could still skip it on a prompt that looks fully self-contained. If you want a hard guarantee, add a `SessionStart` hook in `~/.claude/settings.json` that runs:
+
+```bash
+python3 ~/.claude/skills/auto-memory/auto-memory.py list  --limit 5  --cwd "$PWD" --no-reindex
+python3 ~/.claude/skills/auto-memory/auto-memory.py files --limit 10 --cwd "$PWD" --no-reindex
+```
+
+…and emits the output as additional context. The skill alone is enough for most workflows.
 
 ## Tiered queries
 
-Following the original article's design, queries are tiered by token cost:
+Following the original article's design, queries are tiered by token cost. The skill instructs Claude to start at Tier 1 and escalate only when needed.
 
-| Tier | Command | Purpose | ~Tokens |
-|------|---------|---------|---------|
-| 1 | `auto-memory list --cwd "$PWD"` | Recent sessions in this project | ~50 |
-| 1 | `auto-memory files --cwd "$PWD"` | Recently-touched files | ~100 |
-| 2 | `auto-memory search "term" --cwd "$PWD"` | Full-text recall | ~200 |
-| 3 | `auto-memory show <id-prefix>` | Full session detail | ~500+ |
+| Tier | Subcommand | Purpose | ~Tokens |
+|------|------------|---------|---------|
+| 1 | `list --cwd "$PWD"` | Recent sessions in this project | ~50 |
+| 1 | `files --cwd "$PWD"` | Recently-touched files | ~100 |
+| 2 | `search "term" --cwd "$PWD"` | Full-text recall | ~200 |
+| 3 | `show <id-prefix>` | Full session detail | ~500+ |
 
-The skill instructs Claude Code to start at Tier 1 and escalate only when needed.
+All commands above are subcommands of `python3 ~/.claude/skills/auto-memory/auto-memory.py` (or `auto-memory` if you've added the optional PATH symlink — see install).
 
 ## Layout
 
@@ -47,8 +62,8 @@ git clone https://github.com/briandilley/auto-memory.git ~/auto-memory-repo
 # The CLI script lives inside this directory — one symlink, both pieces installed.
 ln -s ~/auto-memory-repo/auto-memory ~/.claude/skills/auto-memory
 
-# Optional: put `auto-memory` on PATH for shell use. Without this, the SKILL
-# falls back to invoking the script via its full path under ~/.claude/skills.
+# Optional: put `auto-memory` on PATH for shell use. The SKILL itself does
+# not depend on this — it always invokes the script via its full path.
 mkdir -p ~/.local/bin
 ln -s ~/.claude/skills/auto-memory/auto-memory.py ~/.local/bin/auto-memory
 ```
@@ -65,6 +80,8 @@ You should see session/message/file-access counts climb after Claude Code writes
 
 ## CLI reference
 
+Examples below show the bare `auto-memory` form for readability; the SKILL itself always uses the full `python3 ~/.claude/skills/auto-memory/auto-memory.py` path.
+
 ```bash
 auto-memory list    [--limit N] [--days N] [--cwd PATH]
 auto-memory files   [--limit N] [--days N] [--cwd PATH] [--contains STR]
@@ -74,13 +91,13 @@ auto-memory health
 auto-memory reindex [--verbose]
 ```
 
-Global flags:
+Global flags (placed BEFORE the subcommand):
 - `--json` — machine-readable output
 - `--no-reindex` — skip the incremental index pass on this invocation
 
-`SESSION_ID` accepts an 8-character prefix.
+`SESSION_ID` accepts an 8-character prefix. If the prefix is ambiguous, the CLI prints all matches and exits non-zero.
 
-By default, plain text in `search` is sanitized to a safe FTS5 query. Pass `--raw` if you want to use FTS5 operators directly (`AND`, `OR`, `NEAR`, column filters, etc.).
+By default, plain text in `search` is sanitized to a safe FTS5 query (special chars stripped, tokens AND'd as quoted phrases). Pass `--raw` if you want to use FTS5 operators directly (`AND`, `OR`, `NEAR`, column filters, etc.).
 
 ## How it differs from the article's tool
 
