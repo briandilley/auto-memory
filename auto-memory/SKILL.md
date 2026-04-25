@@ -1,11 +1,11 @@
 ---
 name: auto-memory
-description: Use at the start of any conversation, and whenever the user references prior work, prior conversations, files they've worked on before, or context that should already be known - retrieves relevant prior session context from Claude Code's transcript history via the `auto-memory` CLI so you don't have to ask the user to re-explain.
+description: Use at the start of any conversation, and whenever the user references prior work, prior conversations, files they've worked on before, or context that should already be known - retrieves relevant prior session context from Claude Code's transcript history via the bundled auto-memory.py CLI so you don't have to ask the user to re-explain.
 ---
 
 # auto-memory
 
-A read-only recall layer over Claude Code's session transcripts. The `auto-memory` CLI indexes every `~/.claude/projects/*/*.jsonl` into a SQLite cache (FTS5) and exposes commands to list past sessions, surface recently-touched files, full-text search across history, and dump a specific session.
+A read-only recall layer over Claude Code's session transcripts. The bundled `auto-memory.py` CLI indexes every `~/.claude/projects/*/*.jsonl` into a SQLite cache (FTS5) and exposes commands to list past sessions, surface recently-touched files, full-text search across history, and dump a specific session.
 
 Inspired by [the Copilot CLI auto-memory pattern](https://devblogs.microsoft.com/all-things-azure/i-wasted-68-minutes-a-day-re-explaining-my-code-then-i-built-auto-memory/), adapted to Claude Code.
 
@@ -13,13 +13,13 @@ Inspired by [the Copilot CLI auto-memory pattern](https://devblogs.microsoft.com
 
 ## Invocation
 
-The CLI ships next to this SKILL.md. Invoke it via:
+The CLI ships next to this SKILL.md. Always invoke it via the full path:
 
 ```bash
 python3 ~/.claude/skills/auto-memory/auto-memory.py <subcommand> [...]
 ```
 
-If the user has also symlinked it onto PATH (see install), the bare `auto-memory` command works too. The examples below use the bare form for readability — substitute the full `python3 ...` form if PATH isn't set up.
+This works after a single skill-dir symlink, with no PATH setup required. Use this exact form in every command below.
 
 ## When to Use
 
@@ -44,8 +44,8 @@ Use the cheapest tier that answers the question. Add `--cwd "$PWD"` to scope to 
 At conversation start in a project with history, run both:
 
 ```bash
-auto-memory list  --limit 5  --cwd "$PWD"
-auto-memory files --limit 10 --cwd "$PWD"
+python3 ~/.claude/skills/auto-memory/auto-memory.py list  --limit 5  --cwd "$PWD"
+python3 ~/.claude/skills/auto-memory/auto-memory.py files --limit 10 --cwd "$PWD"
 ```
 
 Tells you: recent sessions in this project (with first-prompt previews) and recently-touched files. Often enough.
@@ -55,7 +55,7 @@ Tells you: recent sessions in this project (with first-prompt previews) and rece
 When the user references something specific:
 
 ```bash
-auto-memory search "auth migration" --days 30 --cwd "$PWD" --limit 5
+python3 ~/.claude/skills/auto-memory/auto-memory.py search "auth migration" --days 30 --cwd "$PWD" --limit 5
 ```
 
 Returns ranked snippets with session id + message index. Plain text — no need to know FTS5 syntax (the CLI sanitizes by default; pass `--raw` for advanced FTS queries).
@@ -65,23 +65,25 @@ Returns ranked snippets with session id + message index. Plain text — no need 
 To pull a full session's summary (file accesses + first messages):
 
 ```bash
-auto-memory show 9a8500e4 --limit-messages 20
+python3 ~/.claude/skills/auto-memory/auto-memory.py show 9a8500e4 --limit-messages 20
 ```
 
 8-character session-id prefix is enough.
 
 ## Quick Reference
 
-| Goal | Command |
-|------|---------|
-| Recent sessions in this project | `auto-memory list --cwd "$PWD"` |
-| Recently-touched files | `auto-memory files --cwd "$PWD"` |
-| Find sessions by keyword | `auto-memory search "term"` |
+All commands are prefixed with `python3 ~/.claude/skills/auto-memory/auto-memory.py`.
+
+| Goal | Subcommand |
+|------|------------|
+| Recent sessions in this project | `list --cwd "$PWD"` |
+| Recently-touched files | `files --cwd "$PWD"` |
+| Find sessions by keyword | `search "term"` |
 | Restrict by recency | add `--days 7` |
 | Restrict to user prompts | `search ... --role user` |
-| Inspect one session | `auto-memory show <id-prefix>` |
-| Index health / freshness | `auto-memory health` |
-| Force a full reindex | `auto-memory reindex` |
+| Inspect one session | `show <id-prefix>` |
+| Index health / freshness | `health` |
+| Force a full reindex | `reindex` |
 | Machine-readable output | global `--json` flag |
 
 All commands run an incremental reindex first (cheap — only touches changed files). Use the global `--no-reindex` flag if you've just indexed.
@@ -101,9 +103,10 @@ All commands run an incremental reindex first (cheap — only touches changed fi
 - **Over-fetching** — going straight to `show` when `list` would have answered the question. Start at Tier 1.
 - **Passing FTS5 syntax without `--raw`** — the default sanitizer strips operators. Use `--raw` only when you need them.
 - **Searching across all projects when you only care about this one** — always pass `--cwd` for project-scoped questions.
+- **Trying to invoke `auto-memory` as a bare command** — the file is `auto-memory.py` and the skill never assumes it's on PATH. Always use the full `python3 ~/.claude/skills/auto-memory/auto-memory.py` form shown above.
 
 ## What's NOT Indexed
 
 - `tool_result` outputs are kept (so you can search what tools returned), but be aware the index can grow large in long sessions.
 - Sidechain (subagent) sessions are stored in the same jsonl files and are indexed alongside main sessions.
-- The CLI never writes to the source jsonl. The index is rebuildable from scratch via `auto-memory reindex`.
+- The CLI never writes to the source jsonl. The index is rebuildable from scratch via `python3 ~/.claude/skills/auto-memory/auto-memory.py reindex`.
