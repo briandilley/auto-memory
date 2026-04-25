@@ -25,21 +25,39 @@ Following the original article's design, queries are tiered by token cost:
 
 The skill instructs Claude Code to start at Tier 1 and escalate only when needed.
 
+## Layout
+
+The repo bundles the CLI inside the skill directory so the skill is self-contained:
+
+```
+auto-memory/                 (repo root)
+├── README.md
+├── LICENSE
+└── auto-memory/             (the Claude Code skill)
+    ├── SKILL.md
+    └── auto_memory.py       (CLI — runs from anywhere)
+```
+
 ## Install
 
 ```bash
-git clone https://github.com/briandilley/auto-memory.git ~/auto-memory
+git clone https://github.com/briandilley/auto-memory.git ~/auto-memory-repo
 
-# Make the CLI available on your PATH
-ln -s ~/auto-memory/auto_memory.py ~/.local/bin/auto-memory
+# Required: install the skill so Claude Code can discover it.
+# The CLI script lives inside this directory — one symlink, both pieces installed.
+ln -s ~/auto-memory-repo/auto-memory ~/.claude/skills/auto-memory
 
-# Install the skill so Claude Code can discover it
-ln -s ~/auto-memory/auto-memory ~/.claude/skills/auto-memory
+# Optional: put `auto-memory` on PATH for shell use. Without this, the SKILL
+# falls back to invoking the script via its full path under ~/.claude/skills.
+mkdir -p ~/.local/bin
+ln -s ~/.claude/skills/auto-memory/auto_memory.py ~/.local/bin/auto-memory
 ```
 
 Verify:
 
 ```bash
+python3 ~/.claude/skills/auto-memory/auto_memory.py health
+# or, if the optional PATH symlink is in place:
 auto-memory health
 ```
 

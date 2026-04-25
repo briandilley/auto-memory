@@ -11,6 +11,16 @@ Inspired by [the Copilot CLI auto-memory pattern](https://devblogs.microsoft.com
 
 **Read-only.** Never writes to the source jsonl files; the SQLite index lives in `~/.claude/auto-memory/`.
 
+## Invocation
+
+The CLI ships next to this SKILL.md. Invoke it via:
+
+```bash
+python3 ~/.claude/skills/auto-memory/auto_memory.py <subcommand> [...]
+```
+
+If the user has also symlinked it onto PATH (see install), the bare `auto-memory` command works too. The examples below use the bare form for readability — substitute the full `python3 ...` form if PATH isn't set up.
+
 ## When to Use
 
 - **Start of any conversation** in a project that has prior history — get the lay of the land before responding.
