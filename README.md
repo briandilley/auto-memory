@@ -35,7 +35,7 @@ auto-memory/                 (repo root)
 ├── LICENSE
 └── auto-memory/             (the Claude Code skill)
     ├── SKILL.md
-    └── auto_memory.py       (CLI — runs from anywhere)
+    └── auto-memory.py       (CLI — runs from anywhere)
 ```
 
 ## Install
@@ -50,13 +50,13 @@ ln -s ~/auto-memory-repo/auto-memory ~/.claude/skills/auto-memory
 # Optional: put `auto-memory` on PATH for shell use. Without this, the SKILL
 # falls back to invoking the script via its full path under ~/.claude/skills.
 mkdir -p ~/.local/bin
-ln -s ~/.claude/skills/auto-memory/auto_memory.py ~/.local/bin/auto-memory
+ln -s ~/.claude/skills/auto-memory/auto-memory.py ~/.local/bin/auto-memory
 ```
 
 Verify:
 
 ```bash
-python3 ~/.claude/skills/auto-memory/auto_memory.py health
+python3 ~/.claude/skills/auto-memory/auto-memory.py health
 # or, if the optional PATH symlink is in place:
 auto-memory health
 ```

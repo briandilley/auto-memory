@@ -16,7 +16,7 @@ Inspired by [the Copilot CLI auto-memory pattern](https://devblogs.microsoft.com
 The CLI ships next to this SKILL.md. Invoke it via:
 
 ```bash
-python3 ~/.claude/skills/auto-memory/auto_memory.py <subcommand> [...]
+python3 ~/.claude/skills/auto-memory/auto-memory.py <subcommand> [...]
 ```
 
 If the user has also symlinked it onto PATH (see install), the bare `auto-memory` command works too. The examples below use the bare form for readability — substitute the full `python3 ...` form if PATH isn't set up.
