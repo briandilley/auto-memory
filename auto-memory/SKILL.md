@@ -1,6 +1,6 @@
 ---
 name: auto-memory
-description: Use at the start of any conversation, and whenever the user references prior work, prior conversations, files they've worked on before, or context that should already be known - retrieves relevant prior session context from Claude Code's transcript history via the bundled auto-memory.py CLI so you don't have to ask the user to re-explain.
+description: Use when starting ANY conversation in a working directory that may have prior Claude Code history, BEFORE composing your first response (including clarifying questions) - and again whenever the user references prior work, prior conversations, files touched before, or context they expect you to already know. Without this skill the user has to re-explain context every session.
 ---
 
 # auto-memory
@@ -20,6 +20,18 @@ python3 ~/.claude/skills/auto-memory/auto-memory.py <subcommand> [...]
 ```
 
 This works after a single skill-dir symlink, with no PATH setup required. Use this exact form in every command below.
+
+## STOP — Run Tier 1 Before Responding
+
+If you're invoking this skill at the start of a conversation, **run the Tier 1 commands below before composing any response**, including clarifying questions. The whole point of the skill is to load prior context *before* you reply, not after.
+
+**Do NOT:**
+- Skip Tier 1 because the user's prompt looks self-contained
+- Skip Tier 1 because you "don't think there's relevant history" — check, don't guess
+- Defer Tier 1 until after asking a clarifying question (the answer to the clarifier may already be in past context)
+- Output "let me check your prior sessions" without actually running the commands
+
+**The single exception:** the user has explicitly said to ignore prior context for this conversation.
 
 ## When to Use
 
